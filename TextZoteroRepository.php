@@ -8,8 +8,10 @@ class TextZoteroRepository extends ZoteroRepository
 	const COLUMN_TITLE = 3;
 	const COLUMN_AUTHOR = 4;
 	const COLUMN_DATE = 5;
+	const COLUMN_DOI = 6;
+  	const COLUMN_PDFITEM = 7;
 
-	const HEADER = "|**Zotero ID**|**Short Name**|**Title**|**Author**|**Date**|**Info**|";
+	const HEADER = "|**Zotero ID**|**Short Name**|**Title**|**Author**|**Date**|**DOI**|**PDF**|**Info**|";
 
 	private $fileName;
 	private $config;
@@ -21,7 +23,7 @@ class TextZoteroRepository extends ZoteroRepository
 		$fileContents = file_get_contents($fileName);
 		$this->parseEntries($fileContents);
 	}
-		
+
 	private function parseEntries($fileContents)
 	{
 		foreach (explode("\n", $fileContents) as $line)
@@ -33,14 +35,14 @@ class TextZoteroRepository extends ZoteroRepository
 			}
 		}
 	}
-		
+
 	/**
 	 * @return ZoteroEntry
 	 */
 	private function parseLine($line)
 	{
 		$line = trim($line);
-		
+
 		if ($line == "" || $line == self::HEADER)
 		{
 			return null;
@@ -48,20 +50,22 @@ class TextZoteroRepository extends ZoteroRepository
 
 		$line = $this->extractZoteroKey($line);
 		$columns = explode("|", $line);
-		
-		if (count($columns) != 8)
+
+		if (count($columns) != 10)
 		{
 			return null;
 		}
-		
+
 		$e = new ZoteroEntry($columns[self::COLUMN_ID]);
-		$e->setAuthor($columns[self::COLUMN_AUTHOR]);
-		$e->setCiteKey($columns[self::COLUMN_SHORT_TITLE]);
-		$e->setDate($columns[self::COLUMN_DATE]);
-		$e->setTitle($columns[self::COLUMN_TITLE]);
+		$e->setAuthor(trim($columns[self::COLUMN_AUTHOR]));
+		$e->setCiteKey(trim($columns[self::COLUMN_SHORT_TITLE]));
+		$e->setDate(trim($columns[self::COLUMN_DATE]));
+		$e->setTitle(trim($columns[self::COLUMN_TITLE]));
+		$e->setDOI(trim($columns[self::COLUMN_DOI]));
+		$e->setPDFItem(trim($columns[self::COLUMN_PDFITEM]));
 		return $e;
 	}
-	
+
 	private function extractZoteroKey($text)
 	{
 		$matches = array();
@@ -71,14 +75,14 @@ class TextZoteroRepository extends ZoteroRepository
 		}
 		return $text;
 	}
-		
+
 	public function updateAndSaveEntries(array $newEntries)
 	{
 		foreach ($newEntries as $id => $newEntry)
 		{
 			$this->entries[$id] = $newEntry;
 		}
-		
+
 		$allEntries = array();
 		foreach ($this->entries as $entry)
 		{
@@ -87,7 +91,7 @@ class TextZoteroRepository extends ZoteroRepository
 		ksort($allEntries);
 		$this->saveAllEntriesToFile($allEntries);
 	}
-	
+
 	private function saveAllEntriesToFile($entries)
 	{
 		$text = self::HEADER . "\n";
@@ -97,7 +101,7 @@ class TextZoteroRepository extends ZoteroRepository
 		}
 		file_put_contents($this->fileName, $text);
 	}
-	
+
 	private function serializeEntry(ZoteroEntry $e)
 	{
 		$problem = "";
@@ -107,28 +111,30 @@ class TextZoteroRepository extends ZoteroRepository
 		if ($citeKey === "") { $problem .= "Empty short title/cite key. "; }
 		$citeKeyCount = $this->countCiteKey($e);
 		if ($citeKeyCount > 1) { $problem .= "Multiple usages of short title/cite key (" . $citeKeyCount . "). "; }
-		
-		if ($problem != "") 
+
+		if ($problem != "")
 		{
-			 $problem = "Problem(s): " . $problem; 
+			 $problem = "Problem(s): " . $problem;
 		}
-		else 
+		else
 		{
 			$problem = " ";
 		}
 		$entryUrl = $this->config->getUrlForEntry($e);
 
-		return 
+		return
 			"|" .
 			"[[" . $entryUrl . "|" . $e->getZoteroId() . "]]" . "|" .
 			$citeKey . "|" .
 			$title . "|" .
 			$e->getAuthor() . "|" .
 			$e->getDate() . ($e->getDate() == "" ? " " : "") . "|" .
+			$e->getDOI() . ($e->getDOI() == "" ? " " : "") . "|" .
+			$e->getPDFItem() . ($e->getPDFItem() == "" ? " " : "") . "|" .
 			$problem .
 			"|\n";
 	}
-	
+
 	private function countCiteKey(ZoteroEntry $e)
 	{
 		$count = 0;

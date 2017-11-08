@@ -10,23 +10,28 @@ class FeedZoteroRepository extends ZoteroRepository
 	 * @var DomDocument
 	 */
 	private $dom;
-	
+
 	/**
 	 * @var DomXPath
 	 */
 	private $xpath;
-	
+
 	/**
 	 * @var ZoteroConfig
 	 */
 	private $config;
-		
+
+  /**
+	 * @var Unlinked attachements
+	 */
+	private $attachements;
+
 	public function __construct(ZoteroFeedReader $feedReader, ZoteroConfig $config)
 	{
 		$this->config = $config;
 		$this->parseEntries($feedReader->getFeed());
 	}
-		
+
 	private function parseEntries($feed)
 	{
 		$this->dom = new DomDocument();
@@ -37,10 +42,16 @@ class FeedZoteroRepository extends ZoteroRepository
 		foreach ($r as $node)
 		{
 			$itemType = $this->parseItemType($node);
-			if ($itemType == "note" || $itemType == "attachment")
+			if ($itemType == "note")
 			{
 				continue;
 			}
+			if ($itemType == "attachment")
+			{
+				$this->parseAttachements($node);
+				continue;
+			}
+
 			$e = $this->createEntry($node);
 			if ($e->getZoteroId() !== "" && $e->getAuthor() !== "" && $e->getTitle() !== "")
 			{
@@ -48,6 +59,30 @@ class FeedZoteroRepository extends ZoteroRepository
 			}
 		}
 	}
+
+	private function parseAttachements($node)
+	{
+		$item = $this->xpath->query("./atom:content", $node)->item(0);
+		if ($item == null)
+		{
+			throw new ZoteroParserException("Entry content could not be found in node " . $node);
+		}
+		$json = $item->nodeValue;
+		$data = json_decode($json);
+		if (isset($data->parentItem)) { $parent = html_entity_decode($data->parentItem); }
+		else {throw new ZoteroParserException("Attachemend without parent " . $node);} //No parent on attachement, nothing to do.
+
+		$pdfUrlList = $this->xpath->query("./atom:link[contains(@rel,'enclosure') and contains(@type,'application/pdf')]", $node);
+		if($pdfUrlList->length == 0) return;
+		
+		if (isset($this->entries[$parent]))
+		{
+			$this->entries[$parent]->setPDFItem(html_entity_decode($data->key));
+		} else {
+			$attachements[$parent] = html_entity_decode($data->key);
+		}
+	}
+
 
 	private function createXPath()
 	{
@@ -86,7 +121,7 @@ class FeedZoteroRepository extends ZoteroRepository
 		}
 		return $item->nodeValue;
 	}
-	
+
 	private function parseData($node, ZoteroEntry $e)
 	{
 		$item = $this->xpath->query("./atom:content", $node)->item(0);
@@ -96,13 +131,20 @@ class FeedZoteroRepository extends ZoteroRepository
 		}
 		$json = $item->nodeValue;
 		$data = json_decode($json);
-		
+
 		$e->setAuthor($this->parseAuthor($data));
 		if (isset($data->title)) { $e->setTitle(html_entity_decode($data->title)); }
 		if (isset($data->shortTitle)) { $e->setCiteKey(html_entity_decode($data->shortTitle)); }
 		if (isset($data->date)) { $e->setDate(html_entity_decode($data->date)); }
+		if (isset($data->DOI)) {$e->setDOI(html_entity_decode($data->DOI)); }
+
+		if (isset($attachements[$e->getZoteroId()]))
+		{
+			$e->setPDFItem($attachements[$e->getZoteroId()]);
+			unset($attachements[$e->getZoteroId()]);
+		}
 	}
-	
+
 	private function parseAuthor($data)
 	{
 		if (count($data->creators) == 0)

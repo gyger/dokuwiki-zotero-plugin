@@ -30,12 +30,12 @@ class syntax_plugin_zotero extends DokuWiki_Syntax_Plugin
 	 * @var ZoteroRepository
 	 */
 	private $repo = null;
-	
+
 	/**
 	 * @var ZoteroConfig
 	 */
 	private $config = null;
-	
+
 	function getInfo()
 	{
 		return array(
@@ -77,10 +77,10 @@ class syntax_plugin_zotero extends DokuWiki_Syntax_Plugin
 		{
 			return $this->outputError("invalid citation: " . $match);
 		}
-		
+
 		$output = "";
 		try
-		{	
+		{
 			$this->config = new IniConfig();
 			$cachePage = $this->config->getCachePage();
 
@@ -91,7 +91,7 @@ class syntax_plugin_zotero extends DokuWiki_Syntax_Plugin
 		}
 		catch (Exception $e)
 		{
-			return $this->outputError($e->getMessage()); 
+			return $this->outputError($e->getMessage());
 		}
 	}
 
@@ -112,16 +112,16 @@ class syntax_plugin_zotero extends DokuWiki_Syntax_Plugin
 		{
 			throw new ZoteroConfigException("configuration not set correctly: WikiOutput.parentheses");
 		}
-		
+
 		$entry = $this->getZoteroEntry($citeKey);
-	
+
 		$output = $parentheses[0] . $this->getZoteroLink($entry);
 		$output = $this->addPageRefToOutput($output, $pageRef);
 		$output .= $parentheses[1];
-		
+
 		return $output;
 	}
-	
+
 	private function addPageRefToOutput($output, $pageRef)
 	{
 		if ($pageRef != "")
@@ -137,7 +137,7 @@ class syntax_plugin_zotero extends DokuWiki_Syntax_Plugin
 		}
 		return $output;
 	}
-	
+
 	private function getZoteroEntry($citeKey)
 	{
 		try
@@ -166,8 +166,8 @@ class syntax_plugin_zotero extends DokuWiki_Syntax_Plugin
 	{
 		return '<a href="' . $this->config->getUrlForEntry($entry) . '" title="' . htmlentities($entry->getShortInfo($format)) . '">' . htmlentities($entry->getCiteKey()) . "</a>";
 	}
-	
-	function render($mode, Doku_Renderer $renderer, $data) 
+
+	function render($mode, Doku_Renderer $renderer, $data)
 	{
 		if($mode == 'xhtml')
 		{

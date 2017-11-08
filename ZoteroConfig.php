@@ -6,12 +6,13 @@ abstract class ZoteroConfig
 	const FILE_ZOTERO_IDS = "ZoteroIds.txt";
 	const FILE_ZOTERO_ENTRIES = "ZoteroEntries.txt";
 	const ENTRY_URL = "http://www.zotero.org/USERNAME/items/ENTRYID";
-	const ENTRIES_URL = "https://api.zotero.org/users/USERID/items?content=json&itemType=-attachment&key=ZOTEROKEY";
-	
+	const ENTRIES_URL = "https://api.zotero.org/users/USERID/items?itemType=-note&content=json&key=ZOTEROKEY";
+	const ATTACHEMENTS_URL = "https://api.zotero.org/users/USERID/items/ENTRYID/file/view?key=ZOTEROKEY";
+
 	protected $config = array();
-	
+
 	public function __construct()
-	{	
+	{
 		if (!$this->usernameIsValid())
 		{
 			throw new ZoteroConfigException("Invalid Zotero username in config file.");
@@ -36,7 +37,7 @@ abstract class ZoteroConfig
 			$this->config['WikiOutput']['titleFormat'] = "AUTHOR: TITLE (DATE)";
 		}
 	}
-	
+
 	private function usernameIsValid()
 	{
 		return isset($this->config['ZoteroAccess']['username']) && $this->config['ZoteroAccess']['username'] != "" && $this->config['ZoteroAccess']['username'] != "YOURUSERNAME";
@@ -57,7 +58,7 @@ abstract class ZoteroConfig
 		$value = @$this->config[$category][$key];
 		return $value;
 	}
-	
+
 	public function getCachePage()
 	{
 		$cachePage = $this->config['SourceEntries']['cachePage'];
@@ -89,6 +90,14 @@ abstract class ZoteroConfig
 	{
 		$url = str_replace("USERID", $this->getConfig("ZoteroAccess", "userid"), self::ENTRIES_URL);
 		$url = str_replace("ZOTEROKEY", $this->getConfig("ZoteroAccess", "key"), $url);
+		return $url;
+	}
+
+	public function getUrlForAttachement(ZoteroEntry $entry)
+	{
+		$url = str_replace("USERID", $this->getConfig("ZoteroAccess", "userid"), self::ATTACHEMENTS_URL);
+		$url = str_replace("ZOTEROKEY", $this->getConfig("ZoteroAccess", "key"), $url);
+		$url = str_replace("ENTRYID", $entry->getPDFItem(), $url);
 		return $url;
 	}
 }

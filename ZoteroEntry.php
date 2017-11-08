@@ -4,23 +4,25 @@ class ZoteroEntry
 	const AUTHOR_PLACEHOLDER = "AUTHOR";
 	const TITLE_PLACEHOLDER = "TITLE";
 	const DATE_PLACEHOLDER = "DATE";
-		
+
 	private $zoteroId;
 	private $citeKey;
 	private $title;
 	private $author;
 	private $date;
-	
+	private $DOI;
+	private $pdfItem;
+
 	public function __construct($zoteroId)
 	{
 		$this->zoteroId = $zoteroId;
 	}
-	
+
 	public function getZoteroId()
 	{
 		return $this->zoteroId;
 	}
-	
+
 	public function setCiteKey($value)
 	{
 		$this->citeKey = $value;
@@ -51,6 +53,26 @@ class ZoteroEntry
 		return $this->author;
 	}
 
+	public function setDOI($value)
+	{
+		$this->DOI = $value;
+	}
+
+	public function getDOI()
+	{
+		return $this->DOI;
+	}
+
+	public function setPDFItem($value)
+	{
+		$this->pdfItem = $value;
+	}
+
+	public function getPDFItem()
+	{
+		return $this->pdfItem;
+	}
+
 	public function setDate($value)
 	{
 		$this->date = $value;
@@ -60,7 +82,7 @@ class ZoteroEntry
 	{
 		return $this->date;
 	}
-  
+
   	public function getYear()
 	{
 		$year = 0;
@@ -71,7 +93,7 @@ class ZoteroEntry
 		}
 		return $year;
 	}
-	
+
 	public function getShortInfo($format = "")
 	{
 		$date = $this->getYear();
@@ -79,7 +101,7 @@ class ZoteroEntry
 		{
 			$date = $this->getDate();
 		}
-		
+
 		if ($format == "")
 		{
 			return $this->getAuthor() . ": " . $this->getTitle() . " (" . $date . ")";
@@ -92,12 +114,12 @@ class ZoteroEntry
 			return $title;
 		}
 	}
-	
+
 	public function __toString()
 	{
 		return $this->getShortInfo();
 	}
-	
+
 	public function equals(ZoteroEntry $other)
 	{
 		return $this->getZoteroId() === $other->getZoteroId()
